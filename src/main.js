@@ -60,7 +60,7 @@ let find_primitive_ingredients = function(name, count, recipe_map) {
 
 	return {
 		ingredients: simplify(find_prim_ingrs_by_recipe(resource, count)), 
-		result_count: produced_count,
+		result_count: produced_count * resource.result_count,
 		additional_results: additional_results};
 }
 
