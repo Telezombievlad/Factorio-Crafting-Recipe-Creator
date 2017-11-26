@@ -1,71 +1,65 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import {recipeData} from './data';
+import {recipes_expensive, recipes_normal} from './filework.js';
 
 //----------------------------------------------------
 // Loading icons
 //----------------------------------------------------
 
-// let loadIcon(name) {
-	
-// }
-
 //----------------------------------------------------
 // Resource search and tree traversal
 //----------------------------------------------------
 
-let findPrimitiveIngredients = function(name, count) {
-	let curRecipe = findRecipe(name);
+let simplify = function(ingredients) {
+	let toReturn = new Map();
 
-	// Recursively getting to simplest ingredients
-	if (curRecipe.ingredients.length != 0) {
-		let toProduce = Math.ceil(count / curRecipe.resultCount);
-		let ingrs = [];
+	for (let i of ingredients) {
+		let value = toReturn.get(i.name);
 
-		for (let curIngr of curRecipe.ingredients) {
-			let curIngrSimpleRecipe = findPrimitiveIngredients(curIngr.name, curIngr.count * toProduce);
-
-			// Applying optimized multiplier
-			for (let curIngrSimpleIngr of curIngrSimpleRecipe.ingredients) ingrs.push(curIngrSimpleIngr);
+		if (typeof(value) !== 'undefined') {
+			toReturn.set(i.name, value + i.count);
 		}
-
-		return {ingredients: simplifyIngredients(ingrs), resultCount: curRecipe.resultCount * toProduce};
-	}
-
-	return {ingredients: [{name: name, count: count}], resultCount: count};
-}
-
-let findRecipe = function(name) {
-	for (let recipe of recipeData) {
-		if (recipe.name == name) {
-			return recipe;
-		}
-	}
-
-	return {name: name, ingredients: [], resultCount: 1};
-}
-
-let simplifyIngredients = function(ingrs) {
-	let toReturn = [];
-
-	for (let ingr of ingrs) {
-		let foundName = false;
-
-		for (let simpifiedIngr of toReturn) {
-			if (simpifiedIngr.name == ingr.name) {
-				simpifiedIngr.count += ingr.count;
-				foundName = true;
-				break;
-			}
-		}
-
-		if (foundName == false) {
-			toReturn.push(ingr);
-		}
+		else toReturn.set(i.name, i.count);
 	}
 
 	return toReturn;
+}
+
+let find_primitive_ingredients = function(name, count, recipe_map) {
+	let resource = recipe_map.get(name);
+
+	if (typeof(resource) === 'undefined') {
+		alert('Error 22: Recipe not found!');
+		return new Map();
+	}
+
+	let produced_count = Math.ceil(count / resource.result_count);
+
+	let find_prim_ingrs_by_recipe = function(recipe, count) {
+		let to_produce = Math.ceil(count / recipe.result_count);
+		let ingredients = [];
+
+		for (let i of recipe.ingredients) {
+			let cur_ingr_simple_ingrs = [];
+
+			if (i.hasOwnProperty('ref')) {
+				cur_ingr_simple_ingrs = find_prim_ingrs_by_recipe(i.ref, i.count * to_produce);
+			}
+			else {
+				cur_ingr_simple_ingrs = [{name: i.name, count: i.count * to_produce}];
+			}
+
+			cur_ingr_simple_ingrs.forEach(x => ingredients.push(x));
+		}
+
+		return ingredients;
+	}
+
+	return {
+		ingredients: simplify(find_prim_ingrs_by_recipe(resource, count)), 
+		result_count: produced_count,
+		additional_results: resource.additional_results};
 }
 
 //----------------------------------------------------
@@ -89,42 +83,56 @@ class App extends React.Component {
 		this.state = {
 			name: "iron-axe",
 			count: 1,
-			ingredients: [],
-			resultCount: 1
+			ingredients: new Map(),
+			additional_results: new Map(),
+			result_count: 1
 		};
 
-		this.handleInputSubmit = this.handleInputSubmit.bind(this);
+		this.handle_input_submit = this.handle_input_submit.bind(this);
 	}
 
-	handleInputSubmit() {
-		let recipe = findPrimitiveIngredients(this.state.name, this.state.count);
+	handle_input_submit() {
+		let result = find_primitive_ingredients(this.state.name, this.state.count, recipes_normal);
 
-		this.setState({ingredients: recipe.ingredients, resultCount: recipe.resultCount});
+		this.setState({
+			ingredients: result.ingredients,
+			additional_results: new Map(result.additional_results),
+			result_count: result.result_count});
 	}
 
 	render() {
-		let listElements = [];
+		let list_ingrs = [];
+		this.state.ingredients.forEach(function(count, name, map) {
+			list_ingrs.push(<ResourceListItem name={name} count={count} key={name}/>);
+		});
 
-		for (let ingr of this.state.ingredients) {
-			listElements.push(<ResourceListItem name={ingr.name} count={ingr.count} key={ingr.name}/>);
-		}
+		let list_additional_results = [];
+		this.state.additional_results.forEach(function(count, name, map) {
+			list_additional_results.push(<ResourceListItem name={name} count={count} key={name}/>);
+		});
 
 		return <div>
-				<span>
-					<input
-						onChange={(e) => this.setState({name: e.target.value})}
-						value={this.state.name}
-					/>
-					<input
-						onChange={(e) => this.setState({count: e.target.value})}
-						value={this.state.count.toString()}
-					/>
-					<button onClick={this.handleInputSubmit}> Get recipe! </button>
-				</span>
-				<div> Ingredients: </div>
-				<ul> {listElements} </ul>
-				<span> Use ^ to craft {this.state.resultCount.toString()} </span>
-			</div>;
+			<span>
+				<input
+					onChange={(e) => this.setState({name: e.target.value})}
+					value={this.state.name}
+				/>
+				<input
+					onChange={(e) => this.setState({count: e.target.value})}
+					value={this.state.count.toString()}
+				/>
+				<button onClick={this.handle_input_submit}> Get recipe! </button>
+			</span>
+			<div>
+				Ingredients:
+				<ul> {list_ingrs} </ul>
+			</div>
+			<span> Result Count: {this.state.result_count.toString()} </span>
+			<div>
+				Additional Results:
+				<ul> {list_additional_results} </ul>
+			</div>
+		</div>;
 	}
 }
 
