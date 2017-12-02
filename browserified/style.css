@@ -1,0 +1,22 @@
+@charset "UTF-8";
+body {
+	background-color: #EEE;
+	margin: 0;
+}
+.input {
+	background-color: #CCC;
+	padding: 1%;
+}
+.output {
+	background-color: #BBB;
+	padding: 1%;
+}
+.iotext {
+	color: #444;
+}
+.mainbox {
+	background-color: #DDD;
+	width: 90%;
+	padding: 2%;
+	margin: 5%;
+}

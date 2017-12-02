@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 
 import {recipes_expensive, recipes_normal} from './filework.js';
 
@@ -68,11 +69,19 @@ let find_primitive_ingredients = function(name, count, recipe_map) {
 // React components
 //----------------------------------------------------
 
-let ResourceListItem = function(props) {
-	return <div>
-		<span> x{props.count.toString()} - {props.name} </span>
-	</div>;
-} 
+let IOBox = function(props) {
+	return <div className={props.className}>
+		<h3 className="iotext"> {props.text} </h3>
+		{props.children}
+	</div>
+}
+
+let ResourceTable = function(props) {
+	return <BootstrapTable data={props.data}>
+			<TableHeaderColumn isKey dataField='name'> Ingredient </TableHeaderColumn>
+			<TableHeaderColumn dataField='count'> Count </TableHeaderColumn>
+		</BootstrapTable>
+}
 
 //----------------------------------------------------
 // Application class
@@ -105,35 +114,40 @@ class App extends React.Component {
 	render() {
 		let list_ingrs = [];
 		this.state.ingredients.forEach(function(count, name, map) {
-			list_ingrs.push(<ResourceListItem name={name} count={count} key={name}/>);
+			list_ingrs.push({name: name, count: count});
 		});
 
 		let list_additional_results = [];
 		this.state.additional_results.forEach(function(count, name, map) {
-			list_additional_results.push(<ResourceListItem name={name} count={count} key={name}/>);
+			list_additional_results.push({name: name, count: count});
 		});
 
-		return <div>
-			<span>
+		return <div className="mainbox">
+			<h1>Recipe Calculator</h1>
+			<IOBox className="input" text="Name">
 				<input
 					onChange={(e) => this.setState({name: e.target.value})}
 					value={this.state.name}
 				/>
+			</IOBox>
+			<IOBox className="input" text="Count">
 				<input
-					onChange={(e) => this.setState({count: e.target.value})}
-					value={this.state.count.toString()}
+				onChange={(e) => this.setState({count: e.target.value})}
+				value={this.state.count.toString()}
 				/>
-				<button onClick={this.handle_input_submit}> Get recipe! </button>
-			</span>
-			<div>
-				Ingredients:
-				<ul> {list_ingrs} </ul>
-			</div>
-			<span> Result Count: {this.state.result_count.toString()} </span>
-			<div>
-				Additional Results:
-				<ul> {list_additional_results} </ul>
-			</div>
+			</IOBox>
+			<IOBox className="input" text="">
+				<button onClick={this.handle_input_submit}> Get Recipe! </button>
+			</IOBox>
+			<IOBox className="output" text="Ingredients">
+				<ResourceTable data={list_ingrs}/>
+			</IOBox>
+			<IOBox className="output" text="">
+				<h4> Result Count: {this.state.result_count.toString()} </h4>
+			</IOBox>
+			<IOBox className="output" text="Additional Results">
+				<ResourceTable data={list_additional_results}/>
+			</IOBox>
 		</div>;
 	}
 }
